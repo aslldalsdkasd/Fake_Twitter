@@ -1,13 +1,12 @@
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-from sqlalchemy.ext.asyncio import create_async_engine,  AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-
-engine = create_async_engine('postgresql+asyncpg://admin:admin@postgres:5432/twitter_db')
+engine = create_async_engine(
+    "postgresql+asyncpg://admin:admin@postgres:5432/twitter_db"
+)
 Base = declarative_base()
 
-AsyncSession = sessionmaker(engine,
-                            expire_on_commit=False,
-                            class_=AsyncSession)
+AsyncSession = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
 
 
 async def get_db():
