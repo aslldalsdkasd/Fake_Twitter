@@ -1,8 +1,11 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import delete, select
 
 from models.database import AsyncSession, get_db
 from models.db_orm import Tweet
+from routes.medias import SECRET_KEY
 from schemas.tweetschema import TweetCreate, TweetResponse
 
 router = APIRouter()
@@ -15,14 +18,16 @@ async def tweets(
     db: AsyncSession = Depends(get_db),
 ):
 
-    if api_key != "your-secret-key":
+    if api_key != SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     if len(request.tweet_data) > 500:
         raise HTTPException(status_code=400, detail="Too many tweets")
 
     tweet = Tweet(
-        tweet_data=request.tweet_data, tweet_media_ids=request.tweet_media_ids or []
+        tweet_data=request.tweet_data,
+        tweet_media_ids=request.tweet_media_ids or [],
+        created_at=datetime.now()
     )
 
     db.add(tweet)
@@ -40,7 +45,7 @@ async def delete_tweet(
     db: AsyncSession = Depends(get_db),
 ):
 
-    if api_key != "your-secret-key":
+    if api_key != SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     result = await db.execute(select(Tweet).where(Tweet.id == id))
@@ -58,7 +63,7 @@ async def like_tweet(
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
 ):
-    if api_key != "your-secret-key":
+    if api_key != SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     result = await db.execute(select(Tweet).where(Tweet.id == id))
@@ -74,7 +79,7 @@ async def unlike_tweet(
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
 ):
-    if api_key != "your-secret-key":
+    if api_key != SECRET_KEY:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     result = await db.execute(select(Tweet).where(Tweet.id == id))
