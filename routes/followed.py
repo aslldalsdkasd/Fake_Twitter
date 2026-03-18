@@ -1,11 +1,14 @@
 
 
-from mypy.dmypy.client import request
 
-from models.database import AsyncSession, get_db
-from routes.medias import SECRET_KEY
-from models.db_orm import Follower
+from os import getenv
+from database.database import AsyncSession, get_db
+
 from fastapi import APIRouter, Depends, Header, HTTPException
+from sqlalchemy import select, insert, delete
+
+from func.search_user_id import search_user_id
+from models.models import User, user_followers
 
 router = APIRouter()
 
@@ -15,8 +18,57 @@ async def user_follow(
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db)
 ):
-    if api_key != SECRET_KEY:
+    if api_key != getenv("SECRET_KEY"):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    result = await db.execute('INSERT INTO followers ')
+    target_user = db.get(User, id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_i = search_user_id(api_key)
+    existing_follow = await db.execute(
+        select(user_followers)
+        .where(user_followers.c.user_id == user_i,
+               user_followers.c.follower_id == id)
+    )
+    if existing_follow.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
 
+    await db.execute(
+        insert(user_followers).values(
+            user_id=user_i,
+            follower_id=id,
+        )
+    )
+    await db.commit()
+    return {"result": True}
+
+
+@router.delete('/users/<id>/follow')
+async def user_unfollow(
+        id: int,
+        api_key: str = Header(..., alias="api-key"),
+        db: AsyncSession = Depends(get_db)
+):
+    if api_key != getenv("SECRET_KEY"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    target_user = await db.get(User, id)
+    if not target_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user_i = search_user_id(api_key)
+    existing_follow = await db.execute(
+        select(user_followers)
+        .where(user_followers.c.user_id == user_i,
+               user_followers.c.follower_id == id)
+    )
+    if existing_follow.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.execute(
+        delete(user_followers)
+        .where(user_followers.c.user_id == user_i,
+               user_followers.c.follower_id == id)
+    )
+    await db.commit()
+
+    return {"result": True}
