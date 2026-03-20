@@ -31,7 +31,7 @@ async def user_follow(
                user_followers.c.follower_id == id)
     )
     if existing_follow.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User followed already exists")
 
     await db.execute(
         insert(user_followers).values(
@@ -62,7 +62,7 @@ async def user_unfollow(
                user_followers.c.follower_id == id)
     )
     if existing_follow.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not followed already exists")
 
     await db.execute(
         delete(user_followers)

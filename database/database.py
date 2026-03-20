@@ -5,7 +5,7 @@ from os import getenv
 from dotenv import load_dotenv
 load_dotenv()
 
-engine = create_async_engine()
+engine = create_async_engine('postgresql+asyncpg://admin:admin@postgres:5432/twitter_db')
 # engine = create_async_engine(
 #     url='postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}'.format(
 #         DB_USER=getenv('DB_USER'),

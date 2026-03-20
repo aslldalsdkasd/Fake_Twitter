@@ -4,27 +4,26 @@ from pydantic import BaseModel, Field
 
 class TweetCreate(BaseModel):
     tweet_data: str = Field(..., max_length=3000)
-    tweet_media_ids: Optional[List[int]] = None
+    tweet_media_ids: Optional[List[int]] = []
 
 class TweetResponse(BaseModel):
     result: bool
-    media_id: int
-class Likes(BaseModel):
-    user_id: int
-    name: str
+    tweet_id: int
+
+
 
 class Author(BaseModel):
     id: int
     name: str
 
-class Tweet(BaseModel):
+class TweetContext(BaseModel):
     id: int
     content: str
     attachments: List[str]
     author: Author
-    likes: List[Likes]
+    likes: List[int]
 
 
 class TweetsTape(BaseModel):
     result: bool
-    tweets: List[Tweet]
+    tweets: List[TweetContext]

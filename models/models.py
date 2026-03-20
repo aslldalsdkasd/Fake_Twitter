@@ -56,6 +56,8 @@ class Tweets(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
+    user: Mapped['User'] = relationship('User')
+
     likes: Mapped[list['User']] = relationship(
         'User',
         secondary='tweet_likes',
@@ -67,3 +69,5 @@ class Media(Base):
     __tablename__ = "medias"
     id: Mapped[int] = mapped_column(primary_key=True)
     filepath: Mapped[str] = mapped_column(String(500), nullable=False)
+    filename: Mapped[str] = mapped_column(String(500), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(server_default=text("now()"))

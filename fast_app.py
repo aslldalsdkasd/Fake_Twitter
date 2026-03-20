@@ -1,22 +1,18 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 import asyncio
 from contextlib import asynccontextmanager
-from database.database import engine
-from models.models import Base
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from database.database import engine, session, get_db
+from models.models import Base, User
 from routes.medias import router as medias_router
 from routes.tweets import router as tweets_router
 from routes.followed import router as followed_router
 from routes.profile import router as profile_router
 
-app = FastAPI()
-
-app.include_router(tweets_router, prefix="/api", tags=["tweets"])
-app.include_router(medias_router, prefix="/api", tags=["medias"])
-app.include_router(followed_router, prefix="/api", tags=["followed_tweets"])
-app.include_router(profile_router, prefix="/api", tags=["profile"])
-
-app.mount('/dist', StaticFiles(directory='dist'), name='dist')
 
 
 @asynccontextmanager
@@ -27,24 +23,41 @@ async def lifespan(app: FastAPI):
         try:
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
-                print("PostgreSQL готов! Таблицы созданы!")
+                print("✅ PostgreSQL готов!")
                 break
         except Exception as e:
-            print(f"PostgreSQL не готов, попытка {i + 1}/30: {e}")
+            print(f"⏳ Попытка {i + 1}/30: {e}")
             await asyncio.sleep(1)
-    else:
-        print("PostgreSQL не запустился за 30 секунд!")
 
-    yield
+    async with session() as db:
+        result = await db.execute(select(User.id).limit(1))
+        if not result.scalar_one_or_none():
+            user1 = User(name='pipa', id=1)
+            user2 = User(name='pipa2', id=2)
+            db.add_all([user1, user2])
+            await db.commit()
+
+        yield
+
+        await engine.dispose()
 
 
-    await engine.dispose()
-    print(" FastAPI остановлен")
 
+app = FastAPI(lifespan=lifespan)
 
-app.router.lifespan_context = lifespan
+app.include_router(tweets_router, prefix="/api", tags=["tweets"])
+app.include_router(medias_router, prefix="/api", tags=["medias"])
+app.include_router(followed_router, prefix="/api", tags=["followed_tweets"])
+app.include_router(profile_router, prefix="/api", tags=["profile"])
+
+app.mount('/dist', StaticFiles(directory='dist'), name='dist')
+
 
 
 @app.get("/")
-async def root():
-    return {"message": "Fake Twitter API "}
+async def root(
+        db: AsyncSession = Depends(get_db)
+):
+    res = await db.execute(select(User.id))
+    user = res.scalars().all()
+    return f'{user}'

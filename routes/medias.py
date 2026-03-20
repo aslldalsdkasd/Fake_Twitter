@@ -24,8 +24,8 @@ async def upload_media(
 ):
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
-
-    if not file.content_type.startswith('image/'):
+    content_type = file.content_type.lower()
+    if not content_type.startswith('image/'):
         raise HTTPException(status_code=415, detail="Only images allowed")
 
     file_uuid = uuid.uuid4().hex
@@ -38,9 +38,7 @@ async def upload_media(
     media = Media(
         filename=file.filename,
         filepath=str(file_path),
-        size=len(content),
-        content_type=file.content_type,
-        created_at=datetime.utcnow()
+        created_at=datetime.now()
     )
     db.add(media)
     await db.commit()

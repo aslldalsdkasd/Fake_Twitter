@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from func.search_user_id import search_user_id
 from models.models import User, user_followers
-from schemas.profile import Followers, Profile
+from schemas.profile import Followers, Profile,UserSchema
 
 router = APIRouter()
 
@@ -25,15 +25,22 @@ async def me_profile(
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found")
 
-    following_result = await db.execute(
+    following_q = await db.execute(
         select(user_followers.c.follower_id).where(
             user_followers.c.user_id == user
+        )
+    )
+    followers_ids = [row[0] for row in following_q.fetchall()]
+
+    followers_row = await db.execute(
+        select(User.id, User.name).where(
+            User.id.in_(followers_ids)
         )
     )
 
     followers = [
         Followers(id=row[0], name=row[1])
-        for row in following_result.fetchall()
+        for row in followers_row.all()
     ]
     user_response = User(
         id=user_db.id,
@@ -55,17 +62,24 @@ async def user_profile(
     if not user_db:
         raise HTTPException(status_code=404, detail="User not found")
 
-    following_result = await db.execute(
+    following_q = await db.execute(
         select(user_followers.c.follower_id).where(
             user_followers.c.user_id == id
+        )
+    )
+    following_ids = [row[0] for row in following_q.fetchall()]
+
+    following_row = await db.execute(
+        select(User.id, User.name).where(
+            User.id.in_(following_ids)
         )
     )
 
     followers = [
         Followers(id=row[0], name=row[1])
-        for row in following_result.fetchall()
+        for row in following_row.all()
     ]
-    user_response = User(
+    user_response = UserSchema(
         id=user_db.id,
         name=user_db.name,
         followers=followers,

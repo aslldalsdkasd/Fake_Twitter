@@ -6,11 +6,11 @@ class Followers(BaseModel):
     id: int
     name: str
 
-class User(BaseModel):
+class UserSchema(BaseModel):
     id: int
     name: str
     followers: List[Followers]
 
 class Profile(BaseModel):
     result: bool
-    user: User
+    user: UserSchema
