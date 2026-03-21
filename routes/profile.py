@@ -8,7 +8,7 @@ from sqlalchemy import select
 
 from func.search_user_id import search_user_id
 from models.models import User, user_followers
-from schemas.profile import Followers, Profile,UserSchema
+from schemas.profile import FollowersShema, Profile,UserSchema
 
 router = APIRouter()
 
@@ -16,7 +16,8 @@ router = APIRouter()
 async def me_profile(
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db),
-):
+) -> Profile:
+    """Показывает твою страницу профиля"""
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
     user = search_user_id(api_key)
@@ -38,14 +39,14 @@ async def me_profile(
         )
     )
 
-    followers = [
-        Followers(id=row[0], name=row[1])
+    followers_response = [
+        FollowersShema(id=row[0], name=row[1])
         for row in followers_row.all()
     ]
-    user_response = User(
+    user_response = UserSchema(
         id=user_db.id,
         name=user_db.name,
-        followers=followers,
+        followers=followers_response,
     )
 
     return Profile(result=True, user=user_response)
@@ -55,7 +56,8 @@ async def user_profile(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db),
-):
+) -> Profile:
+    """Показывает чужую страницу профиля"""
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
     user_db = await  db.get(User, id)
@@ -75,14 +77,14 @@ async def user_profile(
         )
     )
 
-    followers = [
-        Followers(id=row[0], name=row[1])
+    followers_response = [
+        FollowersShema(id=row[0], name=row[1])
         for row in following_row.all()
     ]
     user_response = UserSchema(
         id=user_db.id,
         name=user_db.name,
-        followers=followers,
+        followers=followers_response,
     )
 
     return Profile(result=True, user=user_response)

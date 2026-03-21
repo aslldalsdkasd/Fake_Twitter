@@ -2,6 +2,9 @@
 
 
 from os import getenv
+
+from mypy.error_formatter import JSONFormatter
+
 from database.database import AsyncSession, get_db
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -17,11 +20,12 @@ async def user_follow(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db)
-):
+) -> dict[str, bool]:
+    """Пользователь подписывается на другого пользователя"""
     if api_key != getenv("SECRET_KEY"):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    target_user = db.get(User, id)
+    target_user = await db.get(User, id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
     user_i = search_user_id(api_key)
@@ -48,7 +52,8 @@ async def user_unfollow(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db)
-):
+) -> dict[str, bool]:
+    """Пользователь отписывается от другого пользователя"""
     if api_key != getenv("SECRET_KEY"):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -61,8 +66,8 @@ async def user_unfollow(
         .where(user_followers.c.user_id == user_i,
                user_followers.c.follower_id == id)
     )
-    if existing_follow.scalar_one_or_none():
-        raise HTTPException(status_code=404, detail="User not followed already exists")
+    if not existing_follow.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="Not following user")
 
     await db.execute(
         delete(user_followers)

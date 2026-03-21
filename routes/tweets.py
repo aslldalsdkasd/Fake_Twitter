@@ -1,7 +1,7 @@
 from datetime import datetime
 from os import getenv
 from pathlib import Path
-from typing import List
+from typing import List, Any
 
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile, Form, File
 from sqlalchemy import delete, select
@@ -19,12 +19,13 @@ from schemas.tweet import TweetCreate, TweetResponse, TweetsTape, TweetContext, 
 router = APIRouter()
 
 
-@router.post("/tweets", response_model=TweetResponse)
+@router.post("/tweets")
 async def tweets(
     request: TweetCreate,
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, Any]:
+    """Добавляет новый твит """
 
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -59,7 +60,8 @@ async def delete_tweet(
     id: int,
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, bool]:
+    """Удаляет твит"""
 
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -78,7 +80,8 @@ async def like_tweet(
     tweet_id: int,
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, bool]:
+    """Ставит лайк на твит"""
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -110,7 +113,8 @@ async def unlike_tweet(
     id: int,
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, bool]:
+    """Убирает лайк с твита"""
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
 
@@ -137,7 +141,8 @@ async def unlike_tweet(
 async def get_tweets(
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db),
-):
+) -> TweetsTape:
+    """Показывает все твиты пользователя"""
     user_id = search_user_id(api_key)
     stmt =(select(Tweets)
            .where(Tweets.user_id == user_id)

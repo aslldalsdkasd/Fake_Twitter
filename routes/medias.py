@@ -1,6 +1,8 @@
 import uuid
 from datetime import datetime
 from pathlib import Path
+from typing import Any
+
 from dotenv import load_dotenv
 from os import getenv
 import aiofiles
@@ -21,7 +23,8 @@ async def upload_media(
     file: UploadFile = File(..., description="Файл изображения"),
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
-):
+) -> dict[str, Any]:
+    """Подставляет картинки"""
     if api_key != getenv('SECRET_KEY'):
         raise HTTPException(status_code=401, detail="Unauthorized")
     content_type = file.content_type.lower()

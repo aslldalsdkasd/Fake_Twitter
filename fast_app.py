@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 import asyncio
 from contextlib import asynccontextmanager
+from fastapi.responses import FileResponse
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ from routes.profile import router as profile_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Startup + Shutdown события"""
+    """Startup + Shutdown события при запуске API"""
     print("Запуск FastAPI...")
     for i in range(30):
         try:
@@ -50,14 +51,14 @@ app.include_router(medias_router, prefix="/api", tags=["medias"])
 app.include_router(followed_router, prefix="/api", tags=["followed_tweets"])
 app.include_router(profile_router, prefix="/api", tags=["profile"])
 
-app.mount('/dist', StaticFiles(directory='dist'), name='dist')
+app.mount("/dist", StaticFiles(directory="dist"), name="dist")
+app.mount("/js", StaticFiles(directory="dist/js"), name="js")
+app.mount("/css", StaticFiles(directory="dist/css"), name="css")
+
+@app.get("/index")
+async def root():
+    """Страница с фронтендом"""
+    return FileResponse('dist/index.html')
 
 
 
-@app.get("/")
-async def root(
-        db: AsyncSession = Depends(get_db)
-):
-    res = await db.execute(select(User.id))
-    user = res.scalars().all()
-    return f'{user}'
