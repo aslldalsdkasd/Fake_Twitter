@@ -56,7 +56,7 @@ class Tweets(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     tweet_data: Mapped[str] = mapped_column(String(3000),nullable=False)
     tweet_media_ids: Mapped[Optional[List[int]]] = mapped_column(JSON, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
+    # created_at: Mapped[datetime] = mapped_column(server_default=text("now()"))
     user_id: Mapped[int] = mapped_column(ForeignKey('users.id'))
 
     user: Mapped['User'] = relationship('User')

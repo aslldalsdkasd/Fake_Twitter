@@ -12,6 +12,16 @@ services:
         condition: service_healthy
     restart: always
 
+  test:
+    build: .
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://admin:admin@postgres:5432/twitter_db
+    command:
+      sh -c "
+      sleep 5 &&
+      pytest
+      "
+
 
   postgres:
     image: postgres:15

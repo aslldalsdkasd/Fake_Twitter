@@ -52,3 +52,4 @@ async def upload_media(
 
     return {'result': True,
             "media_id": media.id,}
+

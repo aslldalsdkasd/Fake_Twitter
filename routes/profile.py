@@ -6,7 +6,7 @@ from os import getenv
 
 from sqlalchemy import select
 
-from func.search_user_id import search_user_id
+
 from models.models import User, user_followers
 from schemas.profile import FollowersShema, Profile,UserSchema
 
@@ -50,7 +50,7 @@ async def me_profile(
 
     return Profile(result=True, user=user_response)
 
-@router.get("/users/<id>", response_model=Profile, status_code=200)
+@router.get("/users/{id}", response_model=Profile, status_code=200)
 async def user_profile(
         id: int,
         api_key: str = Header(..., alias="api-key"),

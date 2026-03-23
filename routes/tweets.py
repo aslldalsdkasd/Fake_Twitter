@@ -10,7 +10,7 @@ import uuid
 from sqlalchemy.orm import selectinload
 
 from database.database import AsyncSession, get_db
-from func.search_user_id import search_user_id
+
 from models.models import Tweets, tweet_likes, Media, User
 import aiofiles
 
