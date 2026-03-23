@@ -12,23 +12,22 @@ from schemas.profile import FollowersShema, Profile,UserSchema
 
 router = APIRouter()
 
-@router.get("/users/me", response_model=Profile)
+@router.get("/users/me", response_model=Profile, status_code=200)
 async def me_profile(
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db),
 ) -> Profile:
     """Показывает твою страницу профиля"""
-    if api_key != getenv('SECRET_KEY'):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    user = search_user_id(api_key)
 
-    user_db = await  db.get(User, user)
-    if not user_db:
-        raise HTTPException(status_code=404, detail="User not found")
+    stmt = select(User).where(User.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Unauthorized")
 
     following_q = await db.execute(
         select(user_followers.c.follower_id).where(
-            user_followers.c.user_id == user
+            user_followers.c.user_id == user.id
         )
     )
     followers_ids = [row[0] for row in following_q.fetchall()]
@@ -44,25 +43,31 @@ async def me_profile(
         for row in followers_row.all()
     ]
     user_response = UserSchema(
-        id=user_db.id,
-        name=user_db.name,
+        id=user.id,
+        name=user.name,
         followers=followers_response,
     )
 
     return Profile(result=True, user=user_response)
 
-@router.get("/users/<id>", response_model=Profile)
+@router.get("/users/<id>", response_model=Profile, status_code=200)
 async def user_profile(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db),
 ) -> Profile:
     """Показывает чужую страницу профиля"""
-    if api_key != getenv('SECRET_KEY'):
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    user_db = await  db.get(User, id)
-    if not user_db:
-        raise HTTPException(status_code=404, detail="User not found")
+    stmt = select(User).where(User.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Unauthorized")
+
+    user_stmt = select(User).where(User.id == id)
+    res = await db.execute(user_stmt)
+    user_search = res.scalar_one_or_none()
+    if not user_search:
+        raise HTTPException(status_code=404, detail="Unauthorized")
 
     following_q = await db.execute(
         select(user_followers.c.follower_id).where(
@@ -82,8 +87,8 @@ async def user_profile(
         for row in following_row.all()
     ]
     user_response = UserSchema(
-        id=user_db.id,
-        name=user_db.name,
+        id=user_search.id,
+        name=user_search.name,
         followers=followers_response,
     )
 

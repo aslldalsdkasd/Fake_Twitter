@@ -25,6 +25,9 @@ class User(Base):
     __tablename__ = "users"
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(50),nullable=False)
+    api_key: Mapped[str] = mapped_column(String(500),nullable=False, unique=True)
+    
+
     # подписки на тебя
     followers: Mapped[list['User']] = relationship(
         'User',

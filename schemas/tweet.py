@@ -19,7 +19,7 @@ class Author(BaseModel):
 class TweetContext(BaseModel):
     id: int
     content: str
-    attachments: List[str]
+    attachments: List[str]|None
     author: Author
     likes: List[int]
 

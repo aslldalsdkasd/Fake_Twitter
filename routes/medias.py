@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 from os import getenv
 import aiofiles
 from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
+from sqlalchemy import select
 
 from database.database import AsyncSession, get_db
-from models.models import Media
-
+from models.models import Media, User
 
 load_dotenv()
 router = APIRouter()
@@ -18,15 +18,18 @@ UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-@router.post("/medias")
+@router.post("/medias", status_code=201)
 async def upload_media(
     file: UploadFile = File(..., description="Файл изображения"),
     api_key: str = Header(..., alias="api-key"),
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
     """Подставляет картинки"""
-    if api_key != getenv('SECRET_KEY'):
-        raise HTTPException(status_code=401, detail="Unauthorized")
+    stmt = select(User).where(User.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     content_type = file.content_type.lower()
     if not content_type.startswith('image/'):
         raise HTTPException(status_code=415, detail="Only images allowed")

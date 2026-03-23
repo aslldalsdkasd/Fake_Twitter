@@ -15,23 +15,27 @@ from models.models import User, user_followers
 
 router = APIRouter()
 
-@router.post('/users/<id>/follow')
+@router.post('/users/<id>/follow', status_code=201)
 async def user_follow(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db)
 ) -> dict[str, bool]:
     """Пользователь подписывается на другого пользователя"""
-    if api_key != getenv("SECRET_KEY"):
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
     target_user = await db.get(User, id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
-    user_i = search_user_id(api_key)
+
+    stmt = select(User).where(User.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
     existing_follow = await db.execute(
         select(user_followers)
-        .where(user_followers.c.user_id == user_i,
+        .where(user_followers.c.user_id == user.id,
                user_followers.c.follower_id == id)
     )
     if existing_follow.scalar_one_or_none():
@@ -39,7 +43,7 @@ async def user_follow(
 
     await db.execute(
         insert(user_followers).values(
-            user_id=user_i,
+            user_id=user.id,
             follower_id=id,
         )
     )
@@ -47,23 +51,26 @@ async def user_follow(
     return {"result": True}
 
 
-@router.delete('/users/<id>/follow')
+@router.delete('/users/<id>/follow', status_code=200)
 async def user_unfollow(
         id: int,
         api_key: str = Header(..., alias="api-key"),
         db: AsyncSession = Depends(get_db)
 ) -> dict[str, bool]:
     """Пользователь отписывается от другого пользователя"""
-    if api_key != getenv("SECRET_KEY"):
-        raise HTTPException(status_code=401, detail="Unauthorized")
 
     target_user = await db.get(User, id)
     if not target_user:
         raise HTTPException(status_code=404, detail="User not found")
-    user_i = search_user_id(api_key)
+    stmt = select(User).where(User.api_key == api_key)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    result = await db.execute(stmt)
     existing_follow = await db.execute(
         select(user_followers)
-        .where(user_followers.c.user_id == user_i,
+        .where(user_followers.c.user_id == user.id,
                user_followers.c.follower_id == id)
     )
     if not existing_follow.scalar_one_or_none():
@@ -71,7 +78,7 @@ async def user_unfollow(
 
     await db.execute(
         delete(user_followers)
-        .where(user_followers.c.user_id == user_i,
+        .where(user_followers.c.user_id == user.id,
                user_followers.c.follower_id == id)
     )
     await db.commit()

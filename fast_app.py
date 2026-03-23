@@ -33,8 +33,8 @@ async def lifespan(app: FastAPI):
     async with session() as db:
         result = await db.execute(select(User.id).limit(1))
         if not result.scalar_one_or_none():
-            user1 = User(name='pipa', id=1)
-            user2 = User(name='pipa2', id=2)
+            user1 = User(name='pipa', id=1, api_key='user1')
+            user2 = User(name='pipa2', id=2, api_key='user2')
             db.add_all([user1, user2])
             await db.commit()
 
@@ -51,13 +51,16 @@ app.include_router(medias_router, prefix="/api", tags=["medias"])
 app.include_router(followed_router, prefix="/api", tags=["followed_tweets"])
 app.include_router(profile_router, prefix="/api", tags=["profile"])
 
-app.mount("/dist", StaticFiles(directory="dist"), name="dist")
-app.mount("/js", StaticFiles(directory="dist/js"), name="js")
-app.mount("/css", StaticFiles(directory="dist/css"), name="css")
+# app.mount("/dist", StaticFiles(directory="dist"), name="dist")
+# app.mount("/js", StaticFiles(directory="dist/js"), name="js")
+# app.mount("/css", StaticFiles(directory="dist/css"), name="css")
 
 @app.get("/index")
 async def root():
     """Страница с фронтендом"""
+    app.mount("/dist", StaticFiles(directory="dist"), name="dist")
+    app.mount("/js", StaticFiles(directory="dist/js"), name="js")
+    app.mount("/css", StaticFiles(directory="dist/css"), name="css")
     return FileResponse('dist/index.html')
 
 
