@@ -10,4 +10,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["uvicorn", "fast_app:app", "--host" ,"0.0.0.0", "--port","8080", "--reload"]
+CMD ["uvicorn", "fast_app:app", "--host" ,"0.0.0.0", "--port","8080"]

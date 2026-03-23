@@ -12,13 +12,17 @@ from sqlalchemy import select
 from database.database import AsyncSession, get_db
 from models.models import Media, User
 
+STATUS_CREATED = 201
+STATUS_NOT_FOUND = 404
+CONTENT_TYPE_ERROR = 415
+
 load_dotenv()
 router = APIRouter()
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
-@router.post("/medias", status_code=201)
+@router.post("/medias", status_code=STATUS_CREATED)
 async def upload_media(
     file: UploadFile = File(..., description="Файл изображения"),
     api_key: str = Header(..., alias="api-key"),
@@ -29,27 +33,28 @@ async def upload_media(
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=STATUS_NOT_FOUND, detail="User not found")
     content_type = file.content_type.lower()
-    if not content_type.startswith('image/'):
-        raise HTTPException(status_code=415, detail="Only images allowed")
+    if not content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=CONTENT_TYPE_ERROR, detail="Only images allowed"
+        )
 
     file_uuid = uuid.uuid4().hex
     file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    file_path = UPLOAD_DIR / f'{file_uuid}.{file_ext}'
+    file_path = UPLOAD_DIR / f"{file_uuid}.{file_ext}"
 
     content = await file.read()
-    async with aiofiles.open(file_path, 'wb') as f:
+    async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
     media = Media(
-        filename=file.filename,
-        filepath=str(file_path),
-        created_at=datetime.now()
+        filename=file.filename, filepath=str(file_path), created_at=datetime.now()
     )
     db.add(media)
     await db.commit()
     await db.refresh(media)
 
-    return {'result': True,
-            "media_id": media.id,}
-
+    return {
+        "result": True,
+        "media_id": media.id,
+    }
