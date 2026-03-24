@@ -1,19 +1,9 @@
-from datetime import datetime
-from os import getenv
-from pathlib import Path
 from typing import List, Any, Annotated
-
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile, Form, File
 from sqlalchemy import delete, select
-import uuid
-
 from sqlalchemy.orm import selectinload
-
 from database.database import AsyncSession, get_db
-
 from models.models import Tweets, tweet_likes, Media, User
-import aiofiles
-
 from schemas.tweet import TweetCreate, TweetResponse, TweetsTape, TweetContext, Author
 
 router = APIRouter()
@@ -59,11 +49,10 @@ async def tweets(
         user_id=user.id,
     )
     db.add(tweet)
-    if db.add:
-        tweet.result = True
     await db.commit()
     await db.refresh(tweet)
     return {"tweet_id": tweet.id, "result": True}
+
 
 
 @router.delete("/tweets/{id}", status_code=STATUS_OK)

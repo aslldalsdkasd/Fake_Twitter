@@ -1,4 +1,3 @@
-from http.client import HTTPException
 
 from fastapi import APIRouter, Header, Depends, HTTPException
 from database.database import AsyncSession, get_db

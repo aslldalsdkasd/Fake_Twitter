@@ -34,7 +34,9 @@ async def upload_media(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=STATUS_NOT_FOUND, detail="User not found")
-    content_type = file.content_type.lower()
+    content_type = file.content_type
+    if content_type is None:
+        raise HTTPException(status_code=STATUS_NOT_FOUND, detail="Content type not found")
     if not content_type.startswith("image/"):
         raise HTTPException(
             status_code=CONTENT_TYPE_ERROR, detail="Only images allowed"
