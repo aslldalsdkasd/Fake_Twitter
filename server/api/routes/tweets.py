@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Annotated
 from fastapi import APIRouter, Depends, Header, HTTPException, UploadFile, Form, File
 from sqlalchemy import delete, select
@@ -166,22 +167,34 @@ async def get_tweets(
     )
     result = await db.execute(stmt)
     tweets_rows = result.scalars().all()
+    all_media_ids: set[int] = set()
+    for tweet in tweets_rows:
+        if tweet.tweet_media_ids:
+            all_media_ids.update(tweet.tweet_media_ids)
+    stmt_media = select(Media).where(Media.id.in_(all_media_ids))
+    result_media = await db.execute(stmt_media)
+    media_map: dict[int, Media] = {media.id: media for media in result_media.scalars()}
 
     tweets_list = []
-    for tweets in tweets_rows:
-        media_ids = tweets.tweet_media_ids or []
-        attachments = [str(media_id) for media_id in media_ids]
+    for tweet in tweets_rows:
+        media_ids = tweet.tweet_media_ids or []
+        attachments = [
+            f"/uploads/{Path(media_map[mid].filepath).name}"
+            for mid in media_ids
+            if mid in media_map
+            and media_map[mid].filename is not None
+        ]
 
-        likes = [tweet.id for tweet in tweets.likes]
+        likes = [tweet_l.id for tweet_l in tweet.likes]
 
         tweets_list.append(
             TweetContext(
-                id=tweets.id,
-                content=tweets.tweet_data,
-                attachments=attachments,
+                id=tweet.id,
+                content=tweet.tweet_data,
+                attachments=attachments or None,
                 author=Author(
-                    id=tweets.user.id,
-                    name=tweets.user.name,
+                    id=tweet.user.id,
+                    name=tweet.user.name,
                 ),
                 likes=likes,
             )

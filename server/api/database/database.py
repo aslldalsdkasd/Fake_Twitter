@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 engine = create_async_engine(
-    "postgresql+asyncpg://admin:admin@host.docker.internal:5432/twitter_db"
+    "postgresql+asyncpg://admin:admin@db:5432/twitter_db"
 )
 # engine = create_async_engine(
 #     url='postgresql+psycopg://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_DATABASE}'.format(

@@ -43,13 +43,16 @@ async def upload_media(
 
     file_uuid = uuid.uuid4().hex
     file_ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
-    file_path = UPLOAD_DIR / f"{file_uuid}.{file_ext}"
+    file_name = f"{file_uuid}.{file_ext}"
+    file_path = UPLOAD_DIR / file_name
 
     content = await file.read()
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
     media = Media(
-        filename=file.filename, filepath=str(file_path), created_at=datetime.now()
+        filename=file_name,
+        filepath=str(file_path),
+        created_at=datetime.now()
     )
     db.add(media)
     await db.commit()
