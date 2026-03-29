@@ -1,30 +1,48 @@
-version: '3.8'
-
+version: '3.9'
 services:
-  app:
-    build: .
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
     ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=postgresql+asyncpg://admin:admin@postgres:5432/twitter_db
+      - "8080:80"
     depends_on:
-      - postgres
-  postgres:
+      server:
+        condition: service_started
+    networks:
+      - my_network
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./server/media:/app/server/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - my_network
+  db:
     image: postgres:15
-    container_name: postgres-1
     environment:
+      - POSTGRES_DB=twitter_db
       - POSTGRES_PASSWORD=admin
       - POSTGRES_USER=admin
-      - POSTGRES_DB=twitter_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d twitter_db -U admin"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
     ports:
       - "5432:5432"
+    networks:
+      - my_network
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - postgres_logs:/var/log/postgresql
+      - ./db/:/var/lib/postgresql/data
 
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  postgres_logs:
-
+networks:
+  my_network:
+    driver: bridge
